@@ -24,9 +24,9 @@ shinyServer(
           title = paste('Medicare Claims Rate by State,', input$year),
           margin = list(t = 50),
           annotations = 
-            list(x = .6, y = 1.1, text = "Point size is proportional to opioid overdose death rate", 
+            list(x = .075, y = 1.05, text = "Point size is proportional to opioid overdose deaths per 100,000 persons.", 
                  showarrow = F, xref='paper', yref='paper', 
-                 xanchor='right', yanchor='auto', xshift=0, yshift=0,
+                 xanchor='left', yanchor='auto', xshift=0, yshift=0,
                  font=list(size=12))
         )
      }) 
@@ -35,10 +35,25 @@ shinyServer(
       claims <- sum(drugs_by_specialty %>% filter(Year == input$year, Drug == input$drug) %>% 
         select(Total_Claims), na.rm = TRUE)
       infoBox(
-        HTML(paste("Medicare Part D Claims", br(), paste0('for ', input$drug, ' in ', input$year))),
+        HTML(paste("Medicare Part D Claims", br(), paste0('for ', input$drug, br(), ' in ', input$year))),
         formatC(claims, format="d", big.mark=","), 
         icon = icon("pills"),
         color = "black"
+      )
+    })
+    
+    output$StateBox <- renderInfoBox({
+      data <- drugs_by_state %>% 
+        filter(Year == input$year, Drug == toupper(input$drug)) %>% 
+        top_n(1, Claims)
+      state <- data[[1, 'State']]
+      claims <- data[[1, 'Claims']]
+      total <- data[[1, 'Total_Claims']]
+      valueBox(tags$p(state, style = "font-size: 90%;"),
+              paste0('had the highest claims rate at ', round(claims,2), 
+' claims per 100 persons and ', formatC(total, format="d", big.mark=","), ' total claims.'),
+              icon = icon("pills"),
+              color = "black"
       )
     })
     
@@ -88,8 +103,17 @@ shinyServer(
       drugs_by_specialty %>% 
         filter(Year == input$year, Drug == input$drug) %>% 
         select(Specialty, `Total Claims` = Total_Claims, `Claims Per Prescriber` = Claims_Per_Prescriber) %>% 
-        mutate(`Claims Per Prescriber` = round(`Claims Per Prescriber`, 2)) %>% arrange(desc(`Total Claims`))
+        mutate(`Claims Per Prescriber` = round(`Claims Per Prescriber`, 2)) %>% 
+        arrange(desc(`Total Claims`)) %>% 
+        mutate(`Total Claims` = formatC(`Total Claims`, format="d", big.mark=","))
       })
+    
+    output$box1 <- renderUI({
+      box(width = 12, 
+          title = paste0('Medicare Claims for ', input$drug, ' by Specialty'),
+          'Click on column name to sort.',
+          dataTableOutput("mytable"))
+    })
     
     output$RankBox <- renderInfoBox({
       claims <- drugs_by_specialty %>% filter(Year == input$year) %>% group_by(Drug) %>% 
@@ -98,12 +122,13 @@ shinyServer(
       claims$Rank = 1:nrow(claims)
       drug_rank = (claims %>% filter(Drug == input$drug))[[1,'Rank']]
       rank_translated = case_when(
-        drug_rank == 1 ~ "1st",
-        drug_rank == 2 ~ "2nd",
-        drug_rank == 3 ~ "3rd",
-        TRUE ~ paste0(drug_rank, 'th')
+        drug_rank == 1 ~ "",
+        drug_rank == 2 ~ "2nd ",
+        drug_rank == 3 ~ "3rd ",
+        TRUE ~ paste0(drug_rank, 'th ')
       )
-      valueBox(paste0('Rank: ',drug_rank), paste0(input$drug, ' was the ', rank_translated, ' most prescribed opioid in ', input$year),
+      valueBox(tags$p(paste0('Rank: ',drug_rank), style = "font-size: 90%;"),
+               paste0(input$drug, ' was the ', rank_translated, 'most prescribed opioid in ', input$year, '.'),
         icon = icon("list"),
         color = "black"
       )
