@@ -21,10 +21,11 @@ shinyServer(
                        ticktext = c(input$drug), tickfont = list(size = 20)),
           yaxis = list(title = 'Claims Per 100 Persons', titlefont = list(size = 20), tickfont = list(size = 18)),
           titlefont = list(size = 24),
-          title = paste('Medicare Claims Rate by State,', input$year),
+          title = paste('Medicare Claims Rate for Each State,', input$year),
           margin = list(t = 50),
           annotations = 
-            list(x = .075, y = 1.05, text = "Point size is proportional to opioid overdose deaths per 100,000 persons.", 
+            list(x = 0, y = 1.05, 
+                 text =  "Point size is proportional to opioid overdose deaths per 100,000 persons. Hover for details.",
                  showarrow = F, xref='paper', yref='paper', 
                  xanchor='left', yanchor='auto', xshift=0, yshift=0,
                  font=list(size=12))
